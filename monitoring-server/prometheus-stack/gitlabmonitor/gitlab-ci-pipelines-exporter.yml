@@ -1,0 +1,44 @@
+gitlab:
+  url: https://glab.parshamrah.net
+  token: <token>
+ 
+
+
+#projects:
+#  - name: gerami_farbod/backup_and_monitoring
+  
+wildcards:
+   - owner:
+       #name: devops1
+       name: project
+       kind: group
+#       include_subgroups: true
+     pull:
+       environments:
+         enabled: true
+#         excludegit_stopped: false
+       refs:
+#         branches:
+#           enabled: true
+#           exclude_deleted: true
+#         tags:
+#           enabled: true
+#         merge_requests:
+#           enabled: true
+#       pipeline:
+#         jobs:
+#           enabled: true
+#           from_child_pipelines:
+#             enabled: true
+#           runner_description:
+#             enabled: true
+         variables:
+           enabled: true
+         test_reports:
+           enabled: true
+#           from_child_pipelines:
+#             enabled: true
+#           test_cases:
+#             enabled: true
+
+

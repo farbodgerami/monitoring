@@ -1,0 +1,220 @@
+
+
+networks:
+  app_net:
+    external: true
+    name: app_net
+    driver: bridge
+  web_net:
+    external: true
+    name: web_net
+    driver: bridge
+
+services:
+  cadvisor:
+    image: docker.io/ahmadrafiee/cadvisor
+    command: --disable_metrics=disk,udp,percpu
+    restart: ${RESTART_POLICY}
+    hostname: '${HOSTNAME}'
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+ #   ports:
+#       - 8080:8080
+    networks:
+      - web_net
+      - app_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web_net"
+      - "traefik.http.routers.cadvisor.entrypoints=http"
+      - "traefik.http.routers.cadvisor.rule=Host(`${CADSUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.middlewares.web-auth-monitor.basicauth.users=WEB_AUTH_USER:WEB_AUTH_PASS"
+      - "traefik.http.routers.cadvisor.middlewares=web-auth-monitor"
+      - "traefik.http.routers.cadvisor.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.cadvisor-secure.entrypoints=https"
+      - "traefik.http.routers.cadvisor-secure.rule=Host(`${CADSUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.cadvisor-secure.tls=true"
+      - "traefik.http.routers.cadvisor-secure.tls.options=default"
+      - "traefik.http.routers.cadvisor-secure.tls.certresolver=mycert"
+      - "traefik.http.services.cadvisor.loadbalancer.server.port=8080"
+    
+
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    restart: ${RESTART_POLICY}
+    hostname: '${HOSTNAME}'
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    # ports:
+    #   - 9100:9100
+    networks:
+      - web_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web_net"
+      - "traefik.http.routers.node.entrypoints=http"
+      - "traefik.http.routers.node.rule=Host(`${NODESUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.middlewares.web-auth-monitor.basicauth.users=WEB_AUTH_USER:WEB_AUTH_PASS"
+      - "traefik.http.routers.node.middlewares=web-auth-monitor"
+      - "traefik.http.routers.node.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.node-secure.entrypoints=https"
+      - "traefik.http.routers.node-secure.rule=Host(`${NODESUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.node-secure.tls=true"
+      - "traefik.http.routers.node-secure.tls.options=default"
+      - "traefik.http.routers.node-secure.tls.certresolver=mycert"
+      - "traefik.http.services.node.loadbalancer.server.port=9100"
+
+
+
+  promtail:
+    image: grafana/promtail:k171-b5eaae1
+    restart: ${RESTART_POLICY}
+    container_name: promtail
+    volumes:
+      - /var/log:/var/log
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./promtail:/etc/promtail/
+    command: -config.file=/etc/promtail/promtail.yml
+    networks:
+      - web_net
+
+
+  mysql-project-exporter:
+    image: prom/mysqld-exporter
+    # depends_on:
+    #  - mysql
+    container_name: mysql-project-exporter
+    hostname: mysql-project-exporter
+    command:
+     - --config.my-cnf=/cfg/.my.cnf
+     - --mysqld.address=project-mysql:3306
+    volumes:
+      - "./my.cnf:/cfg/.my.cnf"
+    # ports:
+    #   - 9104:9104
+    networks:
+      - web_net
+      - app_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web_net"
+      - "traefik.http.routers.mysql.entrypoints=http"
+      - "traefik.http.routers.mysql.rule=Host(`${MYSQLESUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.mysql.middlewares=web-auth-monitor"
+      - "traefik.http.routers.mysql.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.mysql-secure.entrypoints=https"
+      - "traefik.http.routers.mysql-secure.rule=Host(`${MYSQLESUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.mysql-secure.tls=true"
+      - "traefik.http.routers.mysql-secure.tls.options=default"
+      - "traefik.http.routers.mysql-secure.tls.certresolver=mycert"
+      - "traefik.http.services.mysql.loadbalancer.server.port=9104"
+
+ 
+  
+  redis-project-exporter:
+    image: oliver006/redis_exporter:v1.6.0-alpine
+    container_name: redis-project-exporter
+    hostname: redis-project-exporter
+    # ports:
+    #   - 9121:9121
+    networks:
+      - web_net
+      - app_net
+    command:
+      - '--redis.addr=redis://project-redis:6379'
+      # - '--redis.password=slightly-locked'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web_net"
+      - "traefik.http.routers.redis.entrypoints=http"
+      - "traefik.http.routers.redis.rule=Host(`${REDISESUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.redis.middlewares=web-auth-monitor"
+      - "traefik.http.routers.redis.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.redis-secure.entrypoints=https"
+      - "traefik.http.routers.redis-secure.rule=Host(`${REDISESUB}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.redis-secure.tls=true"
+      - "traefik.http.routers.redis-secure.tls.options=default"
+      - "traefik.http.routers.redis-secure.tls.certresolver=mycert"
+      - "traefik.http.services.redis.loadbalancer.server.port=9121"
+   
+
+ 
+  
+  mongodb-project-exporter:
+    image: bitnami/mongodb-exporter:0.40.0
+    container_name: mongodb-project-exporter
+    hostname: mongodb-project-exporter
+    # ports:
+    #   - 9216:9216
+    networks:
+      - web_net
+      - app_net
+    environment:
+      - MONGODB_URI=mongodb://root:root@project-mongo:27017/
+    command:
+        - '--mongodb.global-conn-pool'
+        - '--collector.diagnosticdata'
+        - '--discovering-mode'
+        - '--mongodb.uri=mongodb://root:root@project-mongo:27017/admin?ssl=false'
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web_net"
+      - "traefik.http.routers.mongodb.entrypoints=http"
+      - "traefik.http.routers.mongodb.rule=Host(`${MONGOproject}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.mongodb.middlewares=web-auth-monitor"
+      - "traefik.http.routers.mongodb.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.mongodb-secure.entrypoints=https"
+      - "traefik.http.routers.mongodb-secure.rule=Host(`${MONGOproject}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.mongodb-secure.tls=true"
+      - "traefik.http.routers.mongodb-secure.tls.options=default"
+      - "traefik.http.routers.mongodb-secure.tls.certresolver=mycert"
+      - "traefik.http.services.mongodb.loadbalancer.server.port=9216"
+
+ 
+
+  php_fpm_project-exporter:
+    container_name: php-fpm-project-exporter 
+    hostname: php-fpm-project-exporter
+    image: "hipages/php-fpm_exporter:2.2.0-amd64"
+    environment:
+      - PHP_FPM_SCRAPE_URI="tcp://project-app:9000/status"
+      # - PHP_FPM_FIX_PROCESS_COUNT: true
+      - PHP_FPM_LOG_LEVEL=info
+    networks:
+     - web_net
+     - app_net 
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web_net"
+      - "traefik.http.routers.phpproject.entrypoints=http"
+      - "traefik.http.routers.phpproject.rule=Host(`${PHPproject}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.phpproject.middlewares=web-auth-monitor"
+      - "traefik.http.routers.phpproject.middlewares=https-redirect"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.routers.phpproject-secure.entrypoints=https"
+      - "traefik.http.routers.phpproject-secure.rule=Host(`${PHPproject}.${DOMAIN_ADDRESS}`)"
+      - "traefik.http.routers.phpproject-secure.tls=true"
+      - "traefik.http.routers.phpproject-secure.tls.options=default"
+      - "traefik.http.routers.phpproject-secure.tls.certresolver=mycert"
+      - "traefik.http.services.phpproject.loadbalancer.server.port=9253"
+  
+ 

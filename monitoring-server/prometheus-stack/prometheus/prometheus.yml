@@ -1,0 +1,212 @@
+global:
+  scrape_interval:     30s
+  evaluation_interval: 30s
+  external_labels:
+      monitor: prom
+
+rule_files:
+  - /etc/prometheus/alerts/*.rules
+
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+    - targets:
+        - alertmanager:9093
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090',]
+
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+
+
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+
+  - job_name: 'blackbox_exporter'
+    static_configs:
+      - targets: ['blackbox-exporter:9115']
+
+  - job_name: 'blackbox-ping'
+    scrape_interval: 30s
+    metrics_path: /probe
+    params:
+      module: [icmp_ipv4]
+    static_configs:
+      - targets:
+         
+          - 8.8.8.8
+          #the backup server
+          - 194.147.212.149
+          # miniosync
+          - 194.147.212.148
+        #  - api.staging.tpcms.ir
+          - google.com
+          - node-exporter
+          - blackbox-exporter
+          - cadvisor    
+          - alertmanager
+          - grafana
+          - prometheus
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  - job_name: 'grafana'
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['grafana:3000']
+
+  - job_name: 'alertmanager'
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['alertmanager:9093']
+
+
+
+  - job_name: 'pushgateway'
+    scrape_interval: 30s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['pushgateway:9091']
+
+  - job_name: 'monitoring-traefik'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['traefik:8082']
+  
+  - job_name: 'gitlab-ci-pipelines-exporter'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['gitlab-ci-pipelines-exporter:8080']
+  
+ 
+
+#production#################################################################################################
+  - job_name: 'production-traefik'
+    metrics_path: '/metrics'
+    params:
+      auth_module: [client.servers]
+    scheme: https
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['trmetrics.monitoring.project.ir']
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+
+  - job_name: 'cadvisor-production'
+    scheme: https
+    scrape_interval: 15s
+    scrape_timeout: 14s
+    static_configs:
+      - targets: ['cadexporter.monitoring.project.ir']
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+  
+  - job_name: 'nodeexporter-produciton'
+    scheme: https
+    static_configs:
+      - targets: ['nodeexporter.monitoring.project.ir']
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+
+  - job_name: 'rabbitmq-exporter-production'
+    scheme: https
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['rabbitmetrics.monitoring.project.ir']
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+    
+  - job_name: mysql-project-production 
+    scheme: https
+    params:
+      auth_module: [client.servers]
+    static_configs:
+      - targets:  ['mysqlexporter.monitoring.project.ir']
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+ 
+  
+  - job_name: redis-project-production 
+    scheme: https
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:  ['redisexporter.monitoring.project.ir']
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+
+ 
+ 
+  - job_name: mongodb-project-produciton
+    scrape_interval: 10s
+    scheme: https
+    metrics_path: /metrics
+    static_configs:
+        - targets:  ["mongoproject.monitoring.project.ir"]
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+ 
+  
+  - job_name: php_fpm_project-production
+    scrape_interval: 10s
+    scheme: https
+    metrics_path: /metrics
+    static_configs:
+        - targets:  ["phpproject.monitoring.project.ir"]
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+ 
+
+# mynio#################################################################################################
+  
+
+  - job_name: Minio-stage
+    bearer_token: <TOKEN>
+    metrics_path: /minio/v2/metrics/cluster
+    scheme: https
+    static_configs:
+    - targets: [io.miniosync.tpcms.ir]
+
+ 
+
+#gitlab################################################################################################
+  - job_name: 'cadvisor-Gitlab'
+    scheme: https
+    static_configs:
+      - targets: ['cad.glabmonitor.parshamrah.net']
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+
+  - job_name: 'nodeexporter-Gitlab'
+    scheme: https
+    static_configs:
+      - targets: ['nodeexporter.glabmonitor.parshamrah.net']
+    basic_auth:
+      username: 'USERNAME'
+      password: 'TRAEFIK_AUTH_PASSWORD'
+  
+

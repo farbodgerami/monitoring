@@ -1,0 +1,52 @@
+global:
+#  resolve_timeout: 1m
+#  smtp_smarthost: 'mail.parshamrah.net:465'
+#  smtp_from: 'it-Support@project.ir'
+#  smtp_auth_username: 'it-Support@project.ir'
+#  smtp_auth_password: 'j%.LTVw3~af$:#i'
+#  smtp_auth_identity: 'it-Support@project.ir'
+
+  resolve_timeout: 1m
+  smtp_smarthost: 'smtp.gmail.com:587'
+  smtp_from: 'fb.gerami@gmail.com'
+  smtp_auth_username: 'fb.gerami@gmail.com'
+  smtp_auth_password: 'mzdurvifehweszpv'
+  smtp_auth_identity: 'fb.gerami@gmail.com'
+
+ 
+
+
+route:
+  receiver: 'email-notifications'
+  group_wait: 30s
+  group_interval: 30s
+  repeat_interval: 30s
+  group_by: ['instance', 'severity']
+
+receivers:
+- name: 'email-notifications'
+  telegram_configs:
+  - bot_token: '7437692482:AAGMCsDvIFcbZxGNhX8PR3CmDbV-rUh9c14'
+    api_url: "https://repo.tpcms.ir/repository/tele/"
+    chat_id: -4213859099
+    parse_mode: ""
+    send_resolved: true
+    disable_notifications: false
+    http_config:
+  #    proxy_url: 'https://preschool.hadihoda.com/PEF6giDNzvUJLYOT/1c74fbcf-e7f8-46e0-ae63-d9b5dc32a987/#gerami'
+      follow_redirects: true
+      enable_http2: true
+  email_configs:
+    # - send_resolved: true
+    #   to: 'fb.gerami@gmail.com'
+    #   from: 'it-Support@project.ir'
+    # - send_resolved: true
+    #   to: 'it@project.ir'
+    #   from: 'it-Support@project.ir'
+
+    - send_resolved: true
+      to: 'fb.gerami@gmail.com'
+      from: 'fb.gerami@gmail.com'
+    - send_resolved: true
+      to: 'it@project.ir'
+      from: 'fb.gerami@gmail.com'
