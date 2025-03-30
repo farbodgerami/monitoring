@@ -1,16 +1,15 @@
 global:
 #  resolve_timeout: 1m
-#  smtp_smarthost: 'mail.parshamrah.net:465'
-#  smtp_from: 'it-Support@project.ir'
-#  smtp_auth_username: 'it-Support@project.ir'
-#  smtp_auth_password: 'j%.LTVw3~af$:#i'
-#  smtp_auth_identity: 'it-Support@project.ir'
+#  smtp_smarthost: '65'
+#  smtp_from: 'it-Sr'
+#  smtp_auth_password: 'TV#i'
+#  smtp_auth_identity: 'r'
 
   resolve_timeout: 1m
   smtp_smarthost: 'smtp.gmail.com:587'
   smtp_from: 'fb.gerami@gmail.com'
   smtp_auth_username: 'fb.gerami@gmail.com'
-  smtp_auth_password: 'mzdurvifehweszpv'
+  smtp_auth_password:'v'
   smtp_auth_identity: 'fb.gerami@gmail.com'
 
  
